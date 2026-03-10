@@ -406,13 +406,19 @@ func TestListBranches(t *testing.T) {
 		}
 
 		// Should have local branches + remote branches
-		foundRemote := false
+		foundOriginMain := false
 		for _, b := range branchList {
 			if b.IsRemote {
-				foundRemote = true
 				// Remote branch names should include remote prefix (e.g., "origin/main")
 				if !strings.Contains(b.Name, "/") {
 					t.Errorf("Remote branch name %q should contain remote prefix (e.g., origin/)", b.Name)
+				}
+				// Symbolic remote HEAD refs should be filtered out
+				if strings.HasSuffix(b.Name, "/HEAD") {
+					t.Errorf("Symbolic remote HEAD ref %q should be filtered out", b.Name)
+				}
+				if b.Name == "origin/main" {
+					foundOriginMain = true
 				}
 			}
 			// No branch name should contain "refs/heads/" or "refs/remotes/" prefix
@@ -421,8 +427,8 @@ func TestListBranches(t *testing.T) {
 			}
 		}
 
-		if !foundRemote {
-			t.Error("No remote branch found when includeRemote=true")
+		if !foundOriginMain {
+			t.Error("Remote branch origin/main not found when includeRemote=true")
 		}
 	})
 }
