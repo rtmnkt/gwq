@@ -85,7 +85,7 @@ func runAdd(cmd *cobra.Command, args []string) error {
 			if selectedBranch.IsRemote {
 				// Parse remote branch name generically (e.g., "origin/feature/x" → "feature/x")
 				baseBranch = selectedBranch.Name
-				if i := strings.IndexByte(selectedBranch.Name, '/'); i >= 0 {
+				if i := strings.IndexByte(selectedBranch.Name, '/'); i >= 0 && i+1 < len(selectedBranch.Name) {
 					branch = selectedBranch.Name[i+1:]
 				}
 			}

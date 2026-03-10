@@ -209,7 +209,7 @@ func (g *Git) ListBranches(includeRemote bool) ([]models.Branch, error) {
 			name = strings.TrimPrefix(name, "refs/remotes/")
 			// Skip symbolic remote HEAD refs (e.g., origin/HEAD) but not
 			// legitimate branches like origin/feature/HEAD
-			if i := strings.IndexByte(name, '/'); i >= 0 && name[i+1:] == "HEAD" {
+			if i := strings.IndexByte(name, '/'); i >= 0 && i < len(name)-1 && name[i+1:] == "HEAD" {
 				continue
 			}
 		} else {
