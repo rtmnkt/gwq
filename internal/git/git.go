@@ -174,7 +174,7 @@ func (g *Git) PruneWorktrees() error {
 
 // ListBranches returns a list of all branches.
 func (g *Git) ListBranches(includeRemote bool) ([]models.Branch, error) {
-	args := []string{"branch", "-v", "--format=%(refname:short)|%(HEAD)|%(committerdate:iso)|%(objectname)|%(subject)|%(authorname)"}
+	args := []string{"branch", "-v", "--format=%(refname)|%(HEAD)|%(committerdate:iso)|%(objectname)|%(subject)|%(authorname)"}
 	if includeRemote {
 		args = append(args, "-a")
 	}
@@ -197,16 +197,19 @@ func (g *Git) ListBranches(includeRemote bool) ([]models.Branch, error) {
 			continue
 		}
 
-		name := parts[0]
+		refName := parts[0]
+		name := refName
 		isCurrent := parts[1] == "*"
 		dateStr := parts[2]
 		hash := parts[3]
 		message := parts[4]
 		author := parts[5]
 
-		isRemote := strings.HasPrefix(name, "remotes/")
+		isRemote := strings.HasPrefix(refName, "refs/remotes/")
 		if isRemote {
-			name = strings.TrimPrefix(name, "remotes/")
+			name = strings.TrimPrefix(refName, "refs/remotes/")
+		} else if strings.HasPrefix(refName, "refs/heads/") {
+			name = strings.TrimPrefix(refName, "refs/heads/")
 		}
 
 		date, _ := time.Parse("2006-01-02 15:04:05 -0700", dateStr)

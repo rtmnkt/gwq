@@ -378,6 +378,59 @@ func TestListBranches(t *testing.T) {
 			t.Error("No current branch found")
 		}
 	})
+
+	t.Run("WithRemoteBranches", func(t *testing.T) {
+		remotePath := filepath.Join(t.TempDir(), "remote.git")
+		cmd := exec.Command("git", "init", "--bare", remotePath)
+		if output, err := cmd.CombinedOutput(); err != nil {
+			t.Fatalf("Failed to create bare remote repository: %v\nOutput: %s", err, output)
+		}
+
+		if err := repo.run("remote", "add", "origin", remotePath); err != nil {
+			t.Fatalf("Failed to add remote: %v", err)
+		}
+
+		if err := repo.run("push", "-u", "origin", "main"); err != nil {
+			t.Fatalf("Failed to push main branch: %v", err)
+		}
+		if err := repo.run("push", "-u", "origin", "feature/test"); err != nil {
+			t.Fatalf("Failed to push feature/test branch: %v", err)
+		}
+
+		branchList, err := g.ListBranches(true)
+		if err != nil {
+			t.Fatalf("ListBranches(true) error = %v", err)
+		}
+
+		branchesByName := make(map[string]models.Branch, len(branchList))
+		for _, branch := range branchList {
+			branchesByName[branch.Name] = branch
+		}
+
+		localMain, ok := branchesByName["main"]
+		if !ok {
+			t.Fatal("Local main branch not found")
+		}
+		if localMain.IsRemote {
+			t.Error("Local main branch marked as remote")
+		}
+
+		remoteMain, ok := branchesByName["origin/main"]
+		if !ok {
+			t.Fatal("Remote main branch not found")
+		}
+		if !remoteMain.IsRemote {
+			t.Error("Remote main branch not marked as remote")
+		}
+
+		remoteFeature, ok := branchesByName["origin/feature/test"]
+		if !ok {
+			t.Fatal("Remote feature/test branch not found")
+		}
+		if !remoteFeature.IsRemote {
+			t.Error("Remote feature/test branch not marked as remote")
+		}
+	})
 }
 
 func TestGetRepositoryName(t *testing.T) {
