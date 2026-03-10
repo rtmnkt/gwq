@@ -378,6 +378,53 @@ func TestListBranches(t *testing.T) {
 			t.Error("No current branch found")
 		}
 	})
+
+	// Test with remote branches
+	t.Run("IncludeRemote", func(t *testing.T) {
+		// Create a "remote" repository by cloning, then add it as a remote
+		remoteRepo := t.TempDir()
+		// Create a bare clone to use as a remote
+		cmd := exec.Command("git", "clone", "--bare", repo.Path, remoteRepo)
+		output, err := cmd.CombinedOutput()
+		if err != nil {
+			t.Fatalf("Failed to create bare clone: %v\nOutput: %s", err, output)
+		}
+
+		// Add the bare repo as a remote named "origin"
+		if err := repo.run("remote", "add", "origin", remoteRepo); err != nil {
+			t.Fatalf("Failed to add remote: %v", err)
+		}
+
+		// Fetch remote branches
+		if err := repo.run("fetch", "origin"); err != nil {
+			t.Fatalf("Failed to fetch: %v", err)
+		}
+
+		branchList, err := g.ListBranches(true)
+		if err != nil {
+			t.Fatalf("ListBranches(true) error = %v", err)
+		}
+
+		// Should have local branches + remote branches
+		foundRemote := false
+		for _, b := range branchList {
+			if b.IsRemote {
+				foundRemote = true
+				// Remote branch names should include remote prefix (e.g., "origin/main")
+				if !strings.Contains(b.Name, "/") {
+					t.Errorf("Remote branch name %q should contain remote prefix (e.g., origin/)", b.Name)
+				}
+			}
+			// No branch name should contain "refs/heads/" or "refs/remotes/" prefix
+			if strings.HasPrefix(b.Name, "refs/") {
+				t.Errorf("Branch name %q should not contain refs/ prefix", b.Name)
+			}
+		}
+
+		if !foundRemote {
+			t.Error("No remote branch found when includeRemote=true")
+		}
+	})
 }
 
 func TestGetRepositoryName(t *testing.T) {
