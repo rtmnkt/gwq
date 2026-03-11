@@ -136,7 +136,13 @@ func (g *Git) AddWorktreeFromBase(path, branch, baseBranch string) error {
 	}
 
 	if _, err := g.run(args...); err != nil {
-		return fmt.Errorf("failed to add worktree from base branch %s: %w", baseBranch, err)
+		if branchExists {
+			return fmt.Errorf("failed to add worktree for existing branch %s: %w", branch, err)
+		}
+		if baseBranch != "" {
+			return fmt.Errorf("failed to add worktree for branch %s from base branch %s: %w", branch, baseBranch, err)
+		}
+		return fmt.Errorf("failed to add worktree for branch %s: %w", branch, err)
 	}
 
 	return nil

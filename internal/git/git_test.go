@@ -348,6 +348,36 @@ func TestAddWorktreeFromBase(t *testing.T) {
 			t.Errorf("Worktree HEAD = %s, want %s", actualHead, expectedHead)
 		}
 	})
+
+	t.Run("ErrorMessageUsesBaseBranchOnlyWhenUsed", func(t *testing.T) {
+		repo := NewTestRepository(t)
+		g := New(repo.Path)
+		branch := "feature/missing-base"
+
+		err := g.AddWorktreeFromBase(filepath.Join(t.TempDir(), "missing-base"), branch, "origin/"+branch)
+		if err == nil {
+			t.Fatal("AddWorktreeFromBase() error = nil, want error")
+		}
+		if !strings.Contains(err.Error(), "failed to add worktree for branch "+branch+" from base branch origin/"+branch) {
+			t.Fatalf("unexpected error: %v", err)
+		}
+	})
+
+	t.Run("ErrorMessageDescribesExistingBranchPath", func(t *testing.T) {
+		repo := NewTestRepository(t)
+		g := New(repo.Path)
+		branch := "feature/already-checked-out"
+
+		repo.CreateBranch(t, branch)
+
+		err := g.AddWorktreeFromBase(filepath.Join(t.TempDir(), "already-checked-out"), branch, "origin/"+branch)
+		if err == nil {
+			t.Fatal("AddWorktreeFromBase() error = nil, want error")
+		}
+		if !strings.Contains(err.Error(), "failed to add worktree for existing branch "+branch) {
+			t.Fatalf("unexpected error: %v", err)
+		}
+	})
 }
 
 func TestRemoveWorktree(t *testing.T) {
